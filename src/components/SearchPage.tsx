@@ -5,7 +5,7 @@ import { Search, Play, X } from 'lucide-react';
 
 const SearchPage: React.FC = () => {
   const [query, setQuery] = useState('');
-  const { playTrack, isPlaying, currentTrack } = usePlayer();
+  const { playTrack, currentTrack } = usePlayer();
 
   const filteredTracks = useMemo(() => {
     if (!query.trim()) return [];

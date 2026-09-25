@@ -30,7 +30,7 @@ const PlaylistView: React.FC<PlaylistViewProps> = ({ playlistId }) => {
     }
   };
 
-  const handlePlayTrack = (track: Track, index: number) => {
+  const handlePlayTrack = (track: Track) => {
     playTrack(track, playlist.tracks);
   };
 
@@ -97,7 +97,7 @@ const PlaylistView: React.FC<PlaylistViewProps> = ({ playlistId }) => {
             return (
               <div
                 key={track.id}
-                onClick={() => handlePlayTrack(track, index)}
+                onClick={() => handlePlayTrack(track)}
                 className={`grid grid-cols-[16px_4fr_3fr_2fr_minmax(80px,1fr)] gap-4 px-4 py-2 rounded-md hover:bg-white/10 cursor-pointer transition-all duration-200 group items-center ${
                   isActive ? 'bg-white/5' : ''
                 }`}

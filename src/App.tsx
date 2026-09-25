@@ -7,23 +7,24 @@ import SearchPage from './components/SearchPage';
 import LibraryPage from './components/LibraryPage';
 import PlaylistView from './components/PlaylistView';
 import LikedSongs from './components/LikedSongs';
-import { ChevronLeft, ChevronRight, User, Menu, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, Menu } from 'lucide-react';
+
+interface NavEntry {
+  view: string;
+  id?: string;
+}
 
 const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState('home');
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>('');
-  const [history, setHistory] = useState<string[]>(['home']);
+  const [history, setHistory] = useState<NavEntry[]>([{ view: 'home' }]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navigate = useCallback((view: string, id?: string) => {
-    const newView = id ? `${view}-${id}` : view;
-    if (id) {
-      setSelectedPlaylistId(id);
-    }
-    
+    setSelectedPlaylistId(id || '');
     const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(newView);
+    newHistory.push({ view, id });
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
     setCurrentView(view);
@@ -34,14 +35,9 @@ const AppContent: React.FC = () => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
-      const prevView = history[newIndex];
-      if (prevView.includes('-')) {
-        const [view, id] = prevView.split('-');
-        setCurrentView(view);
-        setSelectedPlaylistId(id);
-      } else {
-        setCurrentView(prevView);
-      }
+      const entry = history[newIndex];
+      setCurrentView(entry.view);
+      setSelectedPlaylistId(entry.id || '');
     }
   }, [history, historyIndex]);
 
@@ -49,16 +45,13 @@ const AppContent: React.FC = () => {
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
-      const nextView = history[newIndex];
-      if (nextView.includes('-')) {
-        const [view, id] = nextView.split('-');
-        setCurrentView(view);
-        setSelectedPlaylistId(id);
-      } else {
-        setCurrentView(nextView);
-      }
+      const entry = history[newIndex];
+      setCurrentView(entry.view);
+      setSelectedPlaylistId(entry.id || '');
     }
   }, [history, historyIndex]);
+
+  const sidebarViewKey = currentView === 'playlist' ? `playlist-${selectedPlaylistId}` : currentView;
 
   const renderContent = () => {
     switch (currentView) {
@@ -83,7 +76,7 @@ const AppContent: React.FC = () => {
       <div className="flex flex-1 overflow-hidden relative">
         {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
-          <div 
+          <div
             className="fixed inset-0 bg-black/60 z-40 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
@@ -91,20 +84,16 @@ const AppContent: React.FC = () => {
 
         {/* Sidebar - Desktop */}
         <div className="hidden lg:block">
-          <Sidebar 
-            currentView={currentView === 'playlist' ? `playlist-${selectedPlaylistId}` : currentView} 
-            onNavigate={navigate} 
-          />
+          <Sidebar currentView={sidebarViewKey} onNavigate={navigate} />
         </div>
 
         {/* Sidebar - Mobile */}
-        <div className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}>
-          <Sidebar 
-            currentView={currentView === 'playlist' ? `playlist-${selectedPlaylistId}` : currentView} 
-            onNavigate={navigate} 
-          />
+        <div
+          className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <Sidebar currentView={sidebarViewKey} onNavigate={navigate} />
         </div>
 
         {/* Main Content */}

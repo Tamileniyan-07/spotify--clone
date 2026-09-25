@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { usePlayer } from '../context/PlayerContext';
-import { playlists, tracks } from '../data/musicData';
-import { Heart, Music2, Grid3X3, List, Search, SortDesc } from 'lucide-react';
+import { playlists } from '../data/musicData';
+import { Heart, Grid3X3, List, Search, SortDesc } from 'lucide-react';
 
 interface LibraryPageProps {
   onNavigate: (view: string, id?: string) => void;
@@ -9,22 +9,30 @@ interface LibraryPageProps {
 
 const LibraryPage: React.FC<LibraryPageProps> = ({ onNavigate }) => {
   const { likedSongs } = usePlayer();
-  const [filter, setFilter] = useState<'all' | 'playlists' | 'artists'>('all');
+  const [filter, setFilter] = useState<'all' | 'playlists'>('all');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'alpha'>('recent');
 
   const filteredPlaylists = useMemo(() => {
     let result = [...playlists];
+
+    // Apply search filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(p => p.name.toLowerCase().includes(q));
     }
+
+    // Apply sort
     if (sortBy === 'alpha') {
       result.sort((a, b) => a.name.localeCompare(b.name));
     }
+
     return result;
   }, [searchQuery, sortBy]);
+
+  const showLikedSongs = filter === 'all' || filter === 'playlists';
+  const showPlaylists = filter === 'all' || filter === 'playlists';
 
   return (
     <div className="p-6 pb-8 animate-fade-in h-full flex flex-col">
@@ -52,7 +60,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onNavigate }) => {
 
       {/* Filters */}
       <div className="flex items-center gap-2 mb-4">
-        {(['all', 'playlists', 'artists'] as const).map((f) => (
+        {(['all', 'playlists'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -84,21 +92,23 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onNavigate }) => {
         {viewMode === 'list' ? (
           <div className="space-y-1">
             {/* Liked Songs */}
-            <button
-              onClick={() => onNavigate('liked')}
-              className="flex items-center gap-3 w-full p-2 rounded-md hover:bg-spotify-hover transition-all group"
-            >
-              <div className="w-12 h-12 rounded-md bg-gradient-to-br from-indigo-700 to-blue-300 flex items-center justify-center flex-shrink-0">
-                <Heart size={16} fill="white" className="text-white" />
-              </div>
-              <div className="text-left min-w-0">
-                <p className="text-white text-sm font-medium truncate">Liked Songs</p>
-                <p className="text-spotify-light-gray text-xs">Playlist • {likedSongs.size} songs</p>
-              </div>
-            </button>
+            {showLikedSongs && (
+              <button
+                onClick={() => onNavigate('liked')}
+                className="flex items-center gap-3 w-full p-2 rounded-md hover:bg-spotify-hover transition-all group"
+              >
+                <div className="w-12 h-12 rounded-md bg-gradient-to-br from-indigo-700 to-blue-300 flex items-center justify-center flex-shrink-0">
+                  <Heart size={16} fill="white" className="text-white" />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-white text-sm font-medium truncate">Liked Songs</p>
+                  <p className="text-spotify-light-gray text-xs">Playlist • {likedSongs.size} songs</p>
+                </div>
+              </button>
+            )}
 
             {/* Playlists */}
-            {filteredPlaylists.map((playlist) => (
+            {showPlaylists && filteredPlaylists.map((playlist) => (
               <button
                 key={playlist.id}
                 onClick={() => onNavigate('playlist', playlist.id)}
@@ -116,23 +126,32 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onNavigate }) => {
                 </div>
               </button>
             ))}
+
+            {/* Empty state */}
+            {filteredPlaylists.length === 0 && searchQuery && (
+              <div className="text-center py-8">
+                <p className="text-spotify-light-gray">No results found for "{searchQuery}"</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {/* Liked Songs */}
-            <div
-              onClick={() => onNavigate('liked')}
-              className="bg-spotify-dark hover:bg-spotify-hover p-4 rounded-lg cursor-pointer transition-all duration-300 group"
-            >
-              <div className="w-full aspect-square rounded-md bg-gradient-to-br from-indigo-700 to-blue-300 flex items-center justify-center mb-3 shadow-lg">
-                <Heart size={32} fill="white" className="text-white" />
+            {showLikedSongs && (
+              <div
+                onClick={() => onNavigate('liked')}
+                className="bg-spotify-dark hover:bg-spotify-hover p-4 rounded-lg cursor-pointer transition-all duration-300 group"
+              >
+                <div className="w-full aspect-square rounded-md bg-gradient-to-br from-indigo-700 to-blue-300 flex items-center justify-center mb-3 shadow-lg">
+                  <Heart size={32} fill="white" className="text-white" />
+                </div>
+                <p className="text-white font-bold text-sm truncate">Liked Songs</p>
+                <p className="text-spotify-light-gray text-xs">{likedSongs.size} songs</p>
               </div>
-              <p className="text-white font-bold text-sm truncate">Liked Songs</p>
-              <p className="text-spotify-light-gray text-xs">{likedSongs.size} songs</p>
-            </div>
+            )}
 
             {/* Playlists */}
-            {filteredPlaylists.map((playlist) => (
+            {showPlaylists && filteredPlaylists.map((playlist) => (
               <div
                 key={playlist.id}
                 onClick={() => onNavigate('playlist', playlist.id)}
@@ -148,6 +167,13 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onNavigate }) => {
                 <p className="text-spotify-light-gray text-xs truncate">{playlist.owner}</p>
               </div>
             ))}
+
+            {/* Empty state */}
+            {filteredPlaylists.length === 0 && searchQuery && (
+              <div className="col-span-full text-center py-8">
+                <p className="text-spotify-light-gray">No results found for "{searchQuery}"</p>
+              </div>
+            )}
           </div>
         )}
       </div>

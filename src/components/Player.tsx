@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import {
   Play,
@@ -36,19 +36,38 @@ const Player: React.FC = () => {
     nextTrack,
     prevTrack,
     setVolume,
-    setProgress,
+    seekTo,
     toggleShuffle,
     toggleRepeat,
     toggleLike,
     isLiked,
   } = usePlayer();
 
+  const [localProgress, setLocalProgress] = useState<number | null>(null);
+  const [isSeeking, setIsSeeking] = useState(false);
+
+  const displayProgress = isSeeking && localProgress !== null ? localProgress : progress;
+
   const progressPercent = useMemo(() => {
     if (duration === 0) return 0;
-    return (progress / duration) * 100;
-  }, [progress, duration]);
+    return (displayProgress / duration) * 100;
+  }, [displayProgress, duration]);
 
   const VolumeIcon = volume === 0 ? VolumeX : volume < 50 ? Volume1 : Volume2;
+
+  const handleProgressChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Number(e.target.value);
+    setLocalProgress(val);
+    setIsSeeking(true);
+  }, []);
+
+  const handleProgressCommit = useCallback(() => {
+    if (localProgress !== null) {
+      seekTo(localProgress);
+    }
+    setIsSeeking(false);
+    setLocalProgress(null);
+  }, [localProgress, seekTo]);
 
   if (!currentTrack) {
     return (
@@ -134,15 +153,17 @@ const Player: React.FC = () => {
         </div>
         <div className="flex items-center gap-1.5 md:gap-2 w-full">
           <span className="text-[10px] md:text-[11px] text-spotify-light-gray w-8 md:w-10 text-right tabular-nums">
-            {formatTime(progress)}
+            {formatTime(displayProgress)}
           </span>
           <div className="flex-1 group relative">
             <input
               type="range"
               min={0}
               max={duration || 100}
-              value={progress}
-              onChange={(e) => setProgress(Number(e.target.value))}
+              value={displayProgress}
+              onChange={handleProgressChange}
+              onMouseUp={handleProgressCommit}
+              onTouchEnd={handleProgressCommit}
               className="w-full h-3 cursor-pointer"
               style={{
                 background: `linear-gradient(to right, #fff ${progressPercent}%, #4d4d4d ${progressPercent}%)`,
